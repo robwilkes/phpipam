@@ -1,70 +1,60 @@
-FROM php:5.6-apache
-MAINTAINER Pierre Cheynier <pierre.cheynier@gmail.com>
+FROM php:7.2-apache
+MAINTAINER Rob Wilkes <mail@robbiew.net>
 
-ENV PHPIPAM_SOURCE https://github.com/phpipam/phpipam/
-ENV PHPIPAM_VERSION 1.3.2
-ENV PHPMAILER_SOURCE https://github.com/PHPMailer/PHPMailer/
-ENV PHPMAILER_VERSION 5.2.21
-ENV PHPSAML_SOURCE https://github.com/onelogin/php-saml/
-ENV PHPSAML_VERSION 2.10.6
-ENV WEB_REPO /var/www/html
+ENV PHPIPAM_SOURCE="https://github.com/phpipam/phpipam/archive" \
+    PHPIPAM_VERSION="1.3.2" \
+    APACHE_DOCUMENT_ROOT="/var/www/html" \
+    MYSQL_HOST="mysql" \
+    MYSQL_USER="phpipam" \
+    MYSQL_PASSWORD="phpipamadmin" \
+    MYSQL_DB="phpipam" \
+    MYSQL_PORT="3306" \
+    SSL="false" \
+    SSL_KEY="/path/to/cert.key" \
+    SSL_CERT="/path/to/cert.crt" \
+    SSL_CA="/path/to/ca.crt" \
+    SSL_CAPATH="/path/to/ca_certs" \
+    SSL_CIPHER="DHE-RSA-AES256-SHA:AES128-SHA"
 
 # Install required deb packages
-RUN sed -i /etc/apt/sources.list -e 's/$/ non-free'/ && \
-    apt-get update && apt-get -y upgrade && \
-    rm /etc/apt/preferences.d/no-debian-php && \
-    apt-get install -y libcurl4-gnutls-dev libgmp-dev libmcrypt-dev libfreetype6-dev libjpeg-dev libpng-dev libldap2-dev libsnmp-dev snmp-mibs-downloader iputils-ping && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install required packages and files required for snmp
-RUN mkdir -p /var/lib/mibs/ietf && \
-    curl -s ftp://ftp.cisco.com/pub/mibs/v2/CISCO-SMI.my -o /var/lib/mibs/ietf/CISCO-SMI.txt && \
-    curl -s ftp://ftp.cisco.com/pub/mibs/v2/CISCO-TC.my -o /var/lib/mibs/ietf/CISCO-TC.txt && \
-    curl -s ftp://ftp.cisco.com/pub/mibs/v2/CISCO-VTP-MIB.my -o /var/lib/mibs/ietf/CISCO-VTP-MIB.txt && \
-    curl -s ftp://ftp.cisco.com/pub/mibs/v2/MPLS-VPN-MIB.my -o /var/lib/mibs/ietf/MPLS-VPN-MIB.txt
+RUN apt-get update && \
+    apt-get -y upgrade && \
+        apt-get install -y git libgmp-dev libfreetype6-dev libjpeg62-turbo-dev libldb-dev libldap2-dev
 
 # Configure apache and required PHP modules
-RUN docker-php-ext-configure mysqli --with-mysqli=mysqlnd && \
-    docker-php-ext-install mysqli && \
-    docker-php-ext-configure gd --enable-gd-native-ttf --with-freetype-dir=/usr/include/freetype2 --with-png-dir=/usr/include --with-jpeg-dir=/usr/include && \
-    docker-php-ext-install gd && \
-    docker-php-ext-install curl && \
-    docker-php-ext-install json && \
-    docker-php-ext-install snmp && \
-    docker-php-ext-install sockets && \
-    docker-php-ext-install pdo_mysql && \
-    docker-php-ext-install gettext && \
+RUN rm -rf /var/lib/apt/lists/* && \
+    docker-php-ext-configure mysqli --with-mysqli=mysqlnd && \
+    docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ && \
     ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h && \
     docker-php-ext-configure gmp --with-gmp=/usr/include/x86_64-linux-gnu && \
-    docker-php-ext-install gmp && \
-    docker-php-ext-install mcrypt && \
-    docker-php-ext-install pcntl && \
     docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu && \
-    docker-php-ext-install ldap && \
+    docker-php-ext-install -j$(nproc) pdo_mysql sockets gd gmp ldap gettext pcntl && \
     echo ". /etc/environment" >> /etc/apache2/envvars && \
     a2enmod rewrite
 
 COPY php.ini /usr/local/etc/php/
 
 # Copy phpipam sources to web dir
-ADD ${PHPIPAM_SOURCE}/archive/${PHPIPAM_VERSION}.tar.gz /tmp/
-RUN tar -xzf /tmp/${PHPIPAM_VERSION}.tar.gz -C ${WEB_REPO}/ --strip-components=1
-# Copy referenced submodules into the right directory
-ADD ${PHPMAILER_SOURCE}/archive/v${PHPMAILER_VERSION}.tar.gz /tmp/
-RUN tar -xzf /tmp/v${PHPMAILER_VERSION}.tar.gz -C ${WEB_REPO}/functions/PHPMailer/ --strip-components=1
-ADD ${PHPSAML_SOURCE}/archive/v${PHPSAML_VERSION}.tar.gz /tmp/
-RUN tar -xzf /tmp/v${PHPSAML_VERSION}.tar.gz -C ${WEB_REPO}/functions/php-saml/ --strip-components=1
+ADD ${PHPIPAM_SOURCE}/${PHPIPAM_VERSION}.tar.gz /tmp/
+RUN tar -xzf /tmp/${PHPIPAM_VERSION}.tar.gz -C ${APACHE_DOCUMENT_ROOT}/ --strip-components=1 && \
+    cp ${APACHE_DOCUMENT_ROOT}/config.dist.php ${APACHE_DOCUMENT_ROOT}/config.php && \
+    chown www-data ${APACHE_DOCUMENT_ROOT}/app/admin/import-export/upload && \
+    chown www-data ${APACHE_DOCUMENT_ROOT}/app/subnets/import-subnet/upload && \
+    chown www-data ${APACHE_DOCUMENT_ROOT}/css/images/logo
 
 # Use system environment variables into config.php
-RUN cp ${WEB_REPO}/config.dist.php ${WEB_REPO}/config.php && \
-    chown www-data /var/www/html/app/admin/import-export/upload && \
-    chown www-data /var/www/html/app/subnets/import-subnet/upload && \
-    chown www-data /var/www/html/css/images/logo && \
-    sed -i -e "s/\['host'\] = 'localhost'/\['host'\] = getenv(\"MYSQL_ENV_MYSQL_HOST\") ?: \"mysql\"/" \
-    -e "s/\['user'\] = 'phpipam'/\['user'\] = getenv(\"MYSQL_ENV_MYSQL_USER\") ?: \"root\"/" \
-    -e "s/\['name'\] = 'phpipam'/\['name'\] = getenv(\"MYSQL_ENV_MYSQL_DB\") ?: \"phpipam\"/" \
-    -e "s/\['pass'\] = 'phpipamadmin'/\['pass'\] = getenv(\"MYSQL_ENV_MYSQL_PASSWORD\")/" \
-    -e "s/\['port'\] = 3306;/\['port'\] = 3306;\n\n\$password_file = getenv(\"MYSQL_ENV_MYSQL_PASSWORD_FILE\");\nif(file_exists(\$password_file))\n\$db\['pass'\] = preg_replace(\"\/\\\\s+\/\", \"\", file_get_contents(\$password_file));/" \
-    ${WEB_REPO}/config.php
+RUN sed -i \
+    -e "s/\['host'\] = 'localhost'/\['host'\] = getenv(\"MYSQL_HOST\")/" \
+    -e "s/\['user'\] = 'phpipam'/\['user'\] = getenv(\"MYSQL_USER\")/" \
+    -e "s/\['pass'\] = 'phpipamadmin'/\['pass'\] = getenv(\"MYSQL_PASSWORD\")/" \
+    -e "s/\['name'\] = 'phpipam'/\['name'\] = getenv(\"MYSQL_DB\")/" \
+    -e "s/\['port'\] = 3306/\['port'\] = getenv(\"MYSQL_PORT\")/" \
+    -e "s/\['ssl'\] *= false/\['ssl'\] = getenv(\"SSL\")/" \
+    -e "s/\['ssl_key'\] *= '\/path\/to\/cert.key'/['ssl_key'\] = getenv(\"SSL_KEY\")/" \
+    -e "s/\['ssl_cert'\] *= '\/path\/to\/cert.crt'/['ssl_cert'\] = getenv(\"SSL_CERT\")/" \
+    -e "s/\['ssl_ca'\] *= '\/path\/to\/ca.crt'/['ssl_ca'\] = getenv(\"SSL_CA\")/" \
+    -e "s/\['ssl_capath'\] *= '\/path\/to\/ca_certs'/['ssl_capath'\] = getenv(\"SSL_CAPATH\")/" \
+    -e "s/\['ssl_cipher'\] *= 'DHE-RSA-AES256-SHA:AES128-SHA'/['ssl_cipher'\] = getenv(\"SSL_CIPHER\")/" \
+    ${APACHE_DOCUMENT_ROOT}/config.php
 
 EXPOSE 80
