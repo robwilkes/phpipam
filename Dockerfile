@@ -9,12 +9,13 @@ ENV PHPIPAM_SOURCE="https://github.com/phpipam/phpipam/archive" \
     MYSQL_PASSWORD="phpipamadmin" \
     MYSQL_DB="phpipam" \
     MYSQL_PORT="3306" \
-    SSL="false" \
-    SSL_KEY="/path/to/cert.key" \
-    SSL_CERT="/path/to/cert.crt" \
-    SSL_CA="/path/to/ca.crt" \
-    SSL_CAPATH="/path/to/ca_certs" \
-    SSL_CIPHER="DHE-RSA-AES256-SHA:AES128-SHA"
+    MYSQL_SSL="false" \
+    MYSQL_SSL_KEY="/path/to/cert.key" \
+    MYSQL_SSL_CERT="/path/to/cert.crt" \
+    MYSQL_SSL_CA="/path/to/ca.crt" \
+    MYSQL_SSL_CAPATH="/path/to/ca_certs" \
+    MYSQL_SSL_CIPHER="DHE-RSA-AES256-SHA:AES128-SHA" \
+    SSL_ATTRIBUTES="/C=AT/ST=Vienna/L=Vienna/O=Security/OU=Development/CN=example.com"
 
 # Install required deb packages
 RUN apt-get update && \
@@ -49,12 +50,19 @@ RUN sed -i \
     -e "s/\['pass'\] = 'phpipamadmin'/\['pass'\] = getenv(\"MYSQL_PASSWORD\")/" \
     -e "s/\['name'\] = 'phpipam'/\['name'\] = getenv(\"MYSQL_DB\")/" \
     -e "s/\['port'\] = 3306/\['port'\] = getenv(\"MYSQL_PORT\")/" \
-    -e "s/\['ssl'\] *= false/\['ssl'\] = getenv(\"SSL\")/" \
-    -e "s/\['ssl_key'\] *= '\/path\/to\/cert.key'/['ssl_key'\] = getenv(\"SSL_KEY\")/" \
-    -e "s/\['ssl_cert'\] *= '\/path\/to\/cert.crt'/['ssl_cert'\] = getenv(\"SSL_CERT\")/" \
-    -e "s/\['ssl_ca'\] *= '\/path\/to\/ca.crt'/['ssl_ca'\] = getenv(\"SSL_CA\")/" \
-    -e "s/\['ssl_capath'\] *= '\/path\/to\/ca_certs'/['ssl_capath'\] = getenv(\"SSL_CAPATH\")/" \
-    -e "s/\['ssl_cipher'\] *= 'DHE-RSA-AES256-SHA:AES128-SHA'/['ssl_cipher'\] = getenv(\"SSL_CIPHER\")/" \
+    -e "s/\['ssl'\] *= false/\['ssl'\] = getenv(\"MYSQL_SSL\")/" \
+    -e "s/\['ssl_key'\] *= '\/path\/to\/cert.key'/['ssl_key'\] = getenv(\"MYSQL_SSL_KEY\")/" \
+    -e "s/\['ssl_cert'\] *= '\/path\/to\/cert.crt'/['ssl_cert'\] = getenv(\"MYSQL_SSL_CERT\")/" \
+    -e "s/\['ssl_ca'\] *= '\/path\/to\/ca.crt'/['ssl_ca'\] = getenv(\"MYSQL_SSL_CA\")/" \
+    -e "s/\['ssl_capath'\] *= '\/path\/to\/ca_certs'/['ssl_capath'\] = getenv(\"MYSQL_SSL_CAPATH\")/" \
+    -e "s/\['ssl_cipher'\] *= 'DHE-RSA-AES256-SHA:AES128-SHA'/['ssl_cipher'\] = getenv(\"MYSQL_SSL_CIPHER\")/" \
     ${APACHE_DOCUMENT_ROOT}/config.php
 
+RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout /etc/ssl/private/ssl-cert-phpipam.key -out /etc/ssl/certs/ssl-cert-phpipam.pem -subj "getenv(\"SSL_ATTRIBUTES\")/"
+
+RUN a2enmod rewrite
+RUN a2ensite default-ssl
+RUN a2enmod ssl
+
 EXPOSE 80
+EXPOSE 443
