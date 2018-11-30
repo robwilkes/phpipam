@@ -58,7 +58,7 @@ RUN sed -i \
     -e "s/\['ssl_cipher'\] *= 'DHE-RSA-AES256-SHA:AES128-SHA'/['ssl_cipher'\] = getenv(\"MYSQL_SSL_CIPHER\")/" \
     ${APACHE_DOCUMENT_ROOT}/config.php
 
-RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout /etc/ssl/private/ssl-cert-phpipam.key -out /etc/ssl/certs/ssl-cert-phpipam.pem -subj "getenv(\"SSL_ATTRIBUTES\")/"
+RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout /etc/ssl/private/ssl-cert-phpipam.key -out /etc/ssl/certs/ssl-cert-phpipam.pem -subj "/C=AT/ST=Vienna/L=Vienna/O=Security/OU=Development/CN=example.com"
 
 RUN a2enmod rewrite
 RUN a2ensite default-ssl
