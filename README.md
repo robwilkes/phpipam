@@ -23,23 +23,20 @@ Here, we store data on the host system under `/my_dir/phpipam` and use a specifi
 ### Phpipam 
 
 ```bash
-$ docker run -ti -d -p 80:80 -e MYSQL_ENV_MYSQL_PASSWORD=my-secret-pw --name ipam --link phpipam-mysql:mysql pierrecdn/phpipam
+$ docker run -ti -d -p 443:443 -e MYSQL_ENV_MYSQL_PASSWORD=my-secret-pw --name ipam --link phpipam-mysql:mysql robwilkes/phpipam
 ```
 
 We are linking the two containers and expose the HTTP port. 
 
 ### Specific integration (HTTPS, multi-host containers, etc.)
 
-Regarding your requirements and docker setup, you've to expose resources. 
-
-For HTTPS, run a reverse-proxy in front of your phpipam container and link it to.
-Alternatively, this image will generate a self-signed certificate for Apache (this is not recommended for Production)
+This container creates a self-signed certificate for Apache/phpIPAM (not recommended for Production environments, use with caution).
 
 For multi-host containers, expose ports, run etcd or consul to make service discovery works etc. 
 
 ### Configuration 
 
-* Browse to `http://<ip>[:<specific_port>]/install/`
+* Browse to `https://<ip>[:<specific_port>]`
 * Step 1 : Choose 'Automatic database installation'
 
 ![step1](https://cloud.githubusercontent.com/assets/4225738/8746785/01758b9e-2c8d-11e5-8643-7f5862c75efe.png)

@@ -64,5 +64,4 @@ RUN a2enmod rewrite
 RUN a2ensite default-ssl
 RUN a2enmod ssl
 
-EXPOSE 80
 EXPOSE 443
