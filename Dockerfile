@@ -15,7 +15,7 @@ ENV PHPIPAM_SOURCE="https://github.com/phpipam/phpipam/archive" \
     MYSQL_SSL_CA="/path/to/ca.crt" \
     MYSQL_SSL_CAPATH="/path/to/ca_certs" \
     MYSQL_SSL_CIPHER="DHE-RSA-AES256-SHA:AES128-SHA" \
-    SSL_ATTRIBUTES="/C=AT/ST=Vienna/L=Vienna/O=Security/OU=Development/CN=example.com"
+    SSL_ATTRIBUTES="/C=AU/ST=NSW/L=Sydney/O=Container/OU=Development/CN=example.com"
 
 # Install required deb packages
 RUN apt-get update && \
@@ -58,7 +58,7 @@ RUN sed -i \
     -e "s/\['ssl_cipher'\] *= 'DHE-RSA-AES256-SHA:AES128-SHA'/['ssl_cipher'\] = getenv(\"MYSQL_SSL_CIPHER\")/" \
     ${APACHE_DOCUMENT_ROOT}/config.php
 
-RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout /etc/ssl/private/ssl-cert-phpipam.key -out /etc/ssl/certs/ssl-cert-phpipam.pem -subj "/C=AT/ST=Vienna/L=Vienna/O=Security/OU=Development/CN=example.com"
+RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout /etc/ssl/private/ssl-cert-snakeoil.key -out /etc/ssl/certs/ssl-cert-snakeoil.pem -subj ${SSL_ATTRIBUTES}
 
 RUN a2enmod rewrite
 RUN a2ensite default-ssl
