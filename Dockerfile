@@ -3,6 +3,8 @@ MAINTAINER Rob Wilkes <mail@robbiew.net>
 
 ENV PHPIPAM_SOURCE="https://github.com/phpipam/phpipam/archive" \
     PHPIPAM_VERSION="1.3.2" \
+    PHPMAILER_SOURCE="https://github.com/PHPMailer/PHPMailer/archive" \
+    PHPMAILER_VERSION="5.2.27" \
     APACHE_DOCUMENT_ROOT="/var/www/html" \
     MYSQL_HOST="mysql" \
     MYSQL_USER="phpipam" \
@@ -16,6 +18,8 @@ ENV PHPIPAM_SOURCE="https://github.com/phpipam/phpipam/archive" \
     MYSQL_SSL_CAPATH="/path/to/ca_certs" \
     MYSQL_SSL_CIPHER="DHE-RSA-AES256-SHA:AES128-SHA" \
     SSL_ATTRIBUTES="/C=AU/ST=NSW/L=Sydney/O=Container/OU=Development/CN=example.com"
+
+# PHPMailer 6.0.X appears to be currently unsupported by phpIPAM
 
 # Install required deb packages
 RUN apt-get update && \
@@ -42,6 +46,9 @@ RUN tar -xzf /tmp/${PHPIPAM_VERSION}.tar.gz -C ${APACHE_DOCUMENT_ROOT}/ --strip-
     chown www-data ${APACHE_DOCUMENT_ROOT}/app/admin/import-export/upload && \
     chown www-data ${APACHE_DOCUMENT_ROOT}/app/subnets/import-subnet/upload && \
     chown www-data ${APACHE_DOCUMENT_ROOT}/css/images/logo
+# Copy referenced submodules into the right directory
+ADD ${PHPMAILER_SOURCE}/v${PHPMAILER_VERSION}.tar.gz /tmp/
+RUN tar -xzf /tmp/v${PHPMAILER_VERSION}.tar.gz -C ${APACHE_DOCUMENT_ROOT}/functions/PHPMailer/ --strip-components=1
 
 # Use system environment variables into config.php
 RUN sed -i \
