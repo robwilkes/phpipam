@@ -82,6 +82,39 @@ services:
       - ./mysql:/var/lib/mysql
 ```
 
+If you wish to use a local SMTP server as part of your docker environment:
+
+You can also create an all-in-one YAML deployment descriptor with Docker compose, like this:
+
+```yaml
+version: "3.7"
+
+services:
+  phpipam:
+    image: robwilkes/phpipam
+    environment:
+      - MYSQL_HOST=mysql
+    ports:
+      - "80:80"
+      - "443:443"
+    links:
+      - mysql
+      - smtp
+    depends_on:
+      - mysql
+      - smtp
+
+  mysql:
+    image: mysql:5.7
+    env_file:
+      - db.env
+    volumes:
+      - ./mysql:/var/lib/mysql
+  
+  smtp:
+    image: namshi/smtp
+```
+
 And next :
 
 ```bash 
