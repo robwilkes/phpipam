@@ -24,7 +24,7 @@ ENV PHPIPAM_SOURCE="https://github.com/phpipam/phpipam/archive" \
 # Install required deb packages
 RUN apt-get update && \
     apt-get -y upgrade && \
-        apt-get install -y git libgmp-dev libfreetype6-dev libjpeg62-turbo-dev libldb-dev libldap2-dev inetutils-ping
+    apt-get install -y git libgmp-dev libfreetype6-dev libjpeg62-turbo-dev libldb-dev libldap2-dev inetutils-ping cron
 
 # Configure apache and required PHP modules
 RUN rm -rf /var/lib/apt/lists/* && \
@@ -50,6 +50,11 @@ RUN tar -xzf /tmp/${PHPIPAM_VERSION}.tar.gz -C ${APACHE_DOCUMENT_ROOT}/ --strip-
 ADD ${PHPMAILER_SOURCE}/v${PHPMAILER_VERSION}.tar.gz /tmp/
 RUN tar -xzf /tmp/v${PHPMAILER_VERSION}.tar.gz -C ${APACHE_DOCUMENT_ROOT}/functions/PHPMailer/ --strip-components=1
 
+# Set up cron for ping scanning
+ADD crontab /etc/cron.d/phpipam-cron
+RUN chmod 0644 /etc/cron.d/phpipam-cron && \
+    sed -i "s|APACHE_DOC_ROOT|${APACHE_DOCUMENT_ROOT}|g" /etc/cron.d/phpipam-cron
+
 # Use system environment variables into config.php
 RUN sed -i \
     -e "s/\['host'\] = 'localhost'/\['host'\] = getenv(\"MYSQL_HOST\")/" \
@@ -72,3 +77,4 @@ RUN a2ensite default-ssl
 RUN a2enmod ssl
 
 EXPOSE 443
+CMD [ "sh", "-c", "cron && apache2-foreground" ]
