@@ -24,7 +24,7 @@ ENV PHPIPAM_SOURCE="https://github.com/phpipam/phpipam/archive" \
 # Install required deb packages
 RUN apt-get update && \
     apt-get -y upgrade && \
-    apt-get install -y git libgmp-dev libfreetype6-dev libjpeg62-turbo-dev libldb-dev libldap2-dev inetutils-ping cron
+    apt-get install -y git libgmp-dev libfreetype6-dev libjpeg62-turbo-dev libldb-dev libldap2-dev inetutils-ping cron fping
 
 # Configure apache and required PHP modules
 RUN rm -rf /var/lib/apt/lists/* && \
