@@ -1,4 +1,4 @@
-# update host statuses exery 15 minutes
-*/15 * * * * /usr/local/bin/php APACHE_DOC_ROOT/functions/scripts/pingCheck.php
-*/15 * * * * /usr/local/bin/php APACHE_DOC_ROOT/functions/scripts/discoveryCheck.php
+# Update host status every 15 minutes
+*/15 * * * * root /usr/local/bin/php APACHE_DOC_ROOT/functions/scripts/pingCheck.php
+*/15 * * * * root /usr/local/bin/php APACHE_DOC_ROOT/functions/scripts/discoveryCheck.php
 # An empty line is required at the end of this file for a valid cron file.
