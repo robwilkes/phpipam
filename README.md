@@ -30,9 +30,16 @@ We are linking the two containers and expose the HTTP port.
 
 ### Specific integration (HTTPS, multi-host containers, etc.)
 
-This container creates a self-signed certificate for Apache/phpIPAM (not recommended for Production environments, use with caution).
+No longer creates a self-signed certificate, there are many issues with this, including issues with Firefox as the certificate is marked as a CA.
 
-For multi-host containers, expose ports, run etcd or consul to make service discovery works etc. 
+Instead, create the following two files:
+ssl/private/ssl-cert-snakeoil.key
+ssl/certs/ssl-cert-snakeoil.pem
+
+And map the ssl directory as a docker volume:
+```bash
+$ docker run -ti -d -p 443:443 -v ssl:/etc/ssl -e MYSQL_ENV_MYSQL_PASSWORD=my-secret-pw --name ipam --link phpipam-mysql:mysql robwilkes/phpipam
+```
 
 ### Configuration 
 
@@ -73,6 +80,8 @@ services:
       - mysql
     depends_on:
       - mysql
+    volumes:
+      - ./ssl:/etc/ssl
 
   mysql:
     image: mysql:5.7
@@ -82,9 +91,7 @@ services:
       - ./mysql:/var/lib/mysql
 ```
 
-If you wish to use a local SMTP server as part of your docker environment:
-
-You can also create an all-in-one YAML deployment descriptor with Docker compose, like this:
+You can also include an SMTP server by updating your docker-compose.yml as follows:
 
 ```yaml
 version: "3.7"
@@ -103,6 +110,8 @@ services:
     depends_on:
       - mysql
       - smtp
+    volumes:
+      - ./ssl:/etc/ssl
 
   mysql:
     image: mysql:5.7
