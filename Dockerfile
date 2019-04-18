@@ -52,7 +52,9 @@ RUN tar -xzf /tmp/v${PHPMAILER_VERSION}.tar.gz -C ${APACHE_DOCUMENT_ROOT}/functi
 # Set up cron for ping scanning
 ADD crontab /etc/cron.d/phpipam-cron
 RUN chmod 0644 /etc/cron.d/phpipam-cron && \
-    sed -i "s|APACHE_DOC_ROOT|${APACHE_DOCUMENT_ROOT}|g" /etc/cron.d/phpipam-cron
+    sed -i "s|APACHE_DOC_ROOT|${APACHE_DOCUMENT_ROOT}|g" /etc/cron.d/phpipam-cron && \
+    sed -i '/session    required     pam_loginuid.so/c\#session    required   pam_loginuid.so' /etc/pam.d/cron && \
+    crontab /etc/cron.d/phpipam-cron
 
 # Use system environment variables into config.php
 RUN sed -i \
