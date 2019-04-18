@@ -54,6 +54,7 @@ ADD crontab /etc/cron.d/phpipam-cron
 RUN chmod 0644 /etc/cron.d/phpipam-cron && \
     sed -i "s|APACHE_DOC_ROOT|${APACHE_DOCUMENT_ROOT}|g" /etc/cron.d/phpipam-cron && \
     sed -i '/session    required     pam_loginuid.so/c\#session    required   pam_loginuid.so' /etc/pam.d/cron && \
+    echo "MYSQL_HOST=${MYSQL_HOST}\nMYSQL_USER=${MYSQL_USER}\nMYSQL_PASSWORD=${MYSQL_PASSWORD}\nMYSQL_DB=${MYSQL_DB}\nMYSQL_PORT=${MYSQL_PORT}" >> /etc/environment && \
     crontab /etc/cron.d/phpipam-cron
 
 # Use system environment variables into config.php
