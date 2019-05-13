@@ -1,4 +1,4 @@
 # Update host status every 15 minutes
-*/15 * * * * /usr/local/bin/php APACHE_DOC_ROOT/functions/scripts/pingCheck.php
-*/15 * * * * /usr/local/bin/php APACHE_DOC_ROOT/functions/scripts/discoveryCheck.php
+*/15 * * * * . /etc/phpipam_environment; /usr/local/bin/php APACHE_DOC_ROOT/functions/scripts/pingCheck.php >> /var/log/cron.log
+*/15 * * * * . /etc/phpipam_environment; /usr/local/bin/php APACHE_DOC_ROOT/functions/scripts/discoveryCheck.php >> /var/log/cron.log
 # An empty line is required at the end of this file for a valid cron file.
